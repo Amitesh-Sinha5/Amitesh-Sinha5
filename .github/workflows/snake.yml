@@ -1,0 +1,38 @@
+name: Generate contribution snake
+
+on:
+  schedule:
+    # Every 12 hours — the contribution graph only changes daily, so more
+    # frequent runs would just burn Actions minutes.
+    - cron: "0 */12 * * *"
+  # Lets you regenerate it immediately from the Actions tab.
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    permissions:
+      # Required to push the generated SVGs to the `output` branch.
+      contents: write
+
+    steps:
+      - name: Generate snake SVGs
+        uses: Platane/snk@v3
+        id: snake
+        with:
+          github_user_name: ${{ github.repository_owner }}
+          outputs: |
+            dist/github-snake.svg
+            dist/github-snake-dark.svg?palette=github-dark
+
+      - name: Push to the output branch
+        # The SVGs live on a separate orphan branch so they never clutter main's
+        # history with a binary-ish diff twice a day.
+        uses: crazy-max/ghaction-github-pages@v4
+        with:
+          target_branch: output
+          build_dir: dist
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
